@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>30 Days Countdown Timer</title>
+    <style>
+        /* Google Font केवल बैकग्राउंड में डिजिटल लुक के लिए, यदि इंटरनेट न हो तो डिफ़ॉल्ट मोंसपेस काम करेगा */
+        @import url('https://googleapis.com');
+
+        /* बेसिक रिसेट और मुख्य लेआउट */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        /* मुख्य कंटेनर कार्ड */
+        .timer-card {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 32px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #818cf8;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            color: #94a3b8;
+            font-size: 0.875rem;
+            margin-bottom: 32px;
+        }
+
+        /* टाइमर ग्रिड लेआउट */
+        .timer-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 32px;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* मोबाइल स्क्रीन्स के लिए ग्रिड एडजस्टमेंट */
+        @media (max-width: 480px) {
+            .timer-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* टाइमर के व्यक्तिगत बॉक्सेज़ */
+        .time-box {
+            background-color: #020617;
+            border-radius: 12px;
+            padding: 16px 8px;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+
+        .digital-num {
+            font-family: 'Share Tech Mono', 'Courier New', Courier, monospace;
+            font-size: 2.25rem;
+            font-weight: 700;
+            display: block;
+            letter-spacing: 1px;
+        }
+
+        /* अलग-अलग रंगों के शेड्स */
+        #hours { color: #818cf8; }
+        #minutes { color: #34d399; }
+        #seconds { color: #fbbf24; }
+        #ms { color: #f87171; }
+
+        .label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #64748b;
+            font-weight: 600;
+            display: block;
+            margin-top: 6px;
+        }
+
+        /* प्रोग्रेस बार कंटेनर */
+        .progress-container {
+            width: 100%;
+            background-color: #020617;
+            border: 1px solid #334155;
+            border-radius: 9999px;
+            height: 14px;
+            overflow: hidden;
+            margin-bottom: 16px;
+            padding: 2px;
+        }
+
+        /* प्रोग्रेस बार की मूविंग स्ट्रिप */
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #a855f7, #10b981);
+            border-radius: 9999px;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        .status-text {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .finished {
+            color: #34d399;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="timer-card">
+        <h1>30 Days Countdown</h1>
+        <div class="subtitle">Started: 26 Oct 2026, 12:00 AM | Ends: 24 Nov 2026, 12:00 AM</div>
+
+        <!-- 4 कॉलम टाइमर डिस्प्ले -->
+        <div class="timer-grid">
+            <div class="time-box">
+                <span id="hours" class="digital-num">720</span>
+                <span class="label">Hours</span>
+            </div>
+            <div class="time-box">
+                <span id="minutes" class="digital-num">00</span>
+                <span class="label">Minutes</span>
+            </div>
+            <div class="time-box">
+                <span id="seconds" class="digital-num">00</span>
+                <span class="label">Seconds</span>
+            </div>
+            <div class="time-box">
+                <span id="ms" class="digital-num">000</span>
+                <span class="label">Ms</span>
+            </div>
+        </div>
+
+        <!-- प्रोग्रेस बार -->
+        <div class="progress-container">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        
+        <!-- स्टेटस संदेश -->
+        <div id="status-text" class="status-text">Calculating remaining time...</div>
+    </div>
+
+    <script>
+        // निश्चित तारीखें (Fixed Dates)
+        const startDate = new Date('2026-10-26T00:00:00').getTime();
+        const endDate = new Date('2026-11-24T00:00:00').getTime();
+        const totalDuration = endDate - startDate;
+
+        // DOM Elements
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const msEl = document.getElementById('ms');
+        const progressBar = document.getElementById('progress-bar');
+        const statusText = document.getElementById('status-text');
+
+        let animationFrameId;
+
+        function updateTimer() {
+            const now = new Date().getTime();
+            let timeRemaining = endDate - now;
+
+            // यदि टाइमर अभी शुरू नहीं हुआ है
+            if (now < startDate) {
+                hoursEl.innerText = "720";
+                minutesEl.innerText = "00";
+                secondsEl.innerText = "00";
+                msEl.innerText = "000";
+                progressBar.style.width = "100%";
+                statusText.innerText = "Timer has not started yet.";
+                animationFrameId = requestAnimationFrame(updateTimer);
+                return;
+            }
+
+            // यदि समय समाप्त हो चुका है
+            if (timeRemaining <= 0) {
+                hoursEl.innerText = "00";
+                minutesEl.innerText = "00";
+                secondsEl.innerText = "00";
+                msEl.innerText = "000";
+                progressBar.style.width = "0%";
+                statusText.innerHTML = '<span class="finished">Target Reached! 30 Days Completed.</span>';
+                localStorage.setItem('countdown_finished', 'true');
+                cancelAnimationFrame(animationFrameId);
+                return;
+            }
+
+            // समय की गणना
+            const totalHoursRemaining = Math.floor(timeRemaining / (1000 * 60 * 60));
+            const minutesRemaining = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+            const secondsRemaining = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+            const msRemaining = Math.floor(timeRemaining % 1000);
+
+            // UI अपडेट करना (Formatting के साथ)
+            hoursEl.innerText = String(totalHoursRemaining).padStart(2, '0');
+            minutesEl.innerText = String(minutesRemaining).padStart(2, '0');
+            secondsEl.innerText = String(secondsRemaining).padStart(2, '0');
+            msEl.innerText = String(msRemaining).padStart(3, '0');
+
+            // प्रोग्रेस बार का प्रतिशत निकालना
+            const progressPercent = (timeRemaining / totalDuration) * 100;
+            progressBar.style.width = `${progressPercent}%`;
+
+            statusText.innerText = "Time is ticking...";
+
+            // अगले फ्रेम पर फिर से रन करना (बिना लैग के स्मूथ एनीमेशन के लिए)
+            animationFrameId = requestAnimationFrame(updateTimer);
+        }
+
+        // टाइमर शुरू करें
+        animationFrameId = requestAnimationFrame(updateTimer);
+    </script>
+</body>
+</html>
